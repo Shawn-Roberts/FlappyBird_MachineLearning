@@ -9,8 +9,6 @@
 import pygame
 import os,time
 import random
-
-from pygame.image import tostring
 pygame.font.init()
 pygame.mixer.init()
 
@@ -21,6 +19,8 @@ BIRD_IMAGES = [pygame.transform.scale2x(pygame.image.load(os.path.join('assets',
             pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird2.png'))),
             pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird3.png')))]
 
+PIPE_BASE_VELOCITY = 10
+BIRD_VELOCITY = -12.5
 PIPE_IMAGE = pygame.transform.scale2x(pygame.image.load(os.path.join('assets','pipe.png')))
 BASE_IMAGE = pygame.transform.scale2x(pygame.image.load(os.path.join('assets','base.png')))
 BACKGROUND_IMAGE = pygame.transform.scale2x(pygame.image.load(os.path.join('assets','background-day.png')))
@@ -52,7 +52,7 @@ class Bird:
     
     def flap(self):
         # goes upward
-        self.velocity = -10.5
+        self.velocity = BIRD_VELOCITY
         self.tick_count = 0
         self.height = self.y
 
@@ -109,7 +109,7 @@ class Bird:
 
 class Pipe:
     GAP = 200
-    VELOCITY = 5
+    VELOCITY = PIPE_BASE_VELOCITY
 
     def __init__(self,x):
         self.x = x
@@ -160,7 +160,7 @@ class Pipe:
         return False
 
 class Base:
-    VELOCITY = 5
+    VELOCITY =PIPE_BASE_VELOCITY
     WIDTH = BASE_IMAGE.get_width()
     IMAGE = BASE_IMAGE
 
@@ -218,7 +218,7 @@ def main_game():
                 continue_game = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    bird.move()
+                    bird.flap()
                     FLAP_SOUND.play()
         # CLEAN UP 
         for pipe in pipes:
@@ -226,9 +226,6 @@ def main_game():
                 # DEATH_SOUND.play()
                 # print("COLLISSION")
             [pipes.remove(pipe) if pipe.pipe_passed and pipe.x +pipe.PIPE_TOP.get_width() < 0 else False for pipe in pipes]
-            # if pipe.x + pipe.PIPE_TOP.get_width() < 0:
-            #     pipes.remove(pipe)
-            print(len(pipes))
             if not pipe.pipe_passed and pipe.x < bird.x:
                 """Update pipe passed to true, add score, and create new pipe"""
                 pipe.pipe_passed = True
@@ -239,7 +236,7 @@ def main_game():
         # if bird.y + bird.image.get_height() >= 930 or bird.y + bird.image.get_height() <= 0:
             # DEATH_SOUND.play()
             # print("HIT FLOOR/ ROOF")
-
+        bird.move()
         base.move()  
         draw_window(window,bird,pipes,base,score)
     pygame.quit()
