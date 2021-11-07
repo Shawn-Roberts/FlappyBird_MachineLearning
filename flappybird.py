@@ -202,7 +202,6 @@ def draw_window(window,bird,pipes,base,score,session_high_score,game_active):
         window.blit(GAME_OVER_IMAGE,(100,400))
         pygame.display.update()
 
-
 def main_game():
     bird = Bird(230,350)
     base = Base(930)
@@ -245,7 +244,7 @@ def main_game():
                     SCORE_SOUND.play()
                     pipes.append(Pipe(700))
                 pipe.move()
-            if bird.y + bird.image.get_height() >= 930 or bird.y + bird.image.get_height() <= 0:
+            if bird.y + bird.image.get_height() >= 930 or bird.y  <= 0:
                 game_active = False
             bird.move()
             base.move()  
