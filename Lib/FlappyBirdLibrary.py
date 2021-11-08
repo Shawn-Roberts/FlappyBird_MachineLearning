@@ -9,17 +9,19 @@
 import pygame
 import os,time
 import random
-
-from pygame.display import update
 pygame.font.init()
 pygame.mixer.init()
 
 # CONSTANTS
-WIN_WIDTH = 576
-WIN_HEIGHT = 1024
-PIPE_BASE_VELOCITY = 10
+WINDOW_WIDTH = 576
+WINDOW_HEIGHT = 1024
+ITEM_VELOCITY = 10
+PIPE_GAP = 400
 BIRD_VELOCITY = -11.10
-
+BASE_LEVEL = 930
+BIRD_DEFAULT_X_POSTION = 230
+BIRD_DEFAULT_Y_POSITION = 350
+PIPE_DEFAULT_X_POSITION = 700
 BIRD_IMAGES = [pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird1.png'))),
             pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird2.png'))),
             pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird3.png')))]
@@ -29,12 +31,10 @@ BACKGROUND_IMAGE = pygame.transform.scale2x(pygame.image.load(os.path.join('asse
 GAME_OVER_IMAGE = pygame.transform.scale2x(pygame.image.load(os.path.join('assets','gameover.png')))
 
 SCORE_FONT = pygame.font.Font(os.path.join('fonts','04B_19.TTF'),60)
-
 FLAP_SOUND = pygame.mixer.Sound(os.path.join('sound','sfx_wing.wav'))
 HIT_SOUND = pygame.mixer.Sound(os.path.join('sound','sfx_hit.wav'))
 DEATH_SOUND = pygame.mixer.Sound(os.path.join('sound','sfx_die.wav'))
 SCORE_SOUND = pygame.mixer.Sound(os.path.join('sound','sfx_point.wav'))
-
 
 # CLASSES
 class Bird:
@@ -108,8 +108,8 @@ class Bird:
         return pygame.mask.from_surface(self.image)
 
 class Pipe:
-    GAP = 200
-    VELOCITY = PIPE_BASE_VELOCITY
+    GAP = PIPE_GAP
+    VELOCITY = ITEM_VELOCITY
 
     def __init__(self,x):
         self.x = x
@@ -133,7 +133,13 @@ class Pipe:
     def draw(self, win):
         win.blit(self.PIPE_TOP, (self.x, self.top))
         win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
-    
+
+    def isPassed(self,pipe,bird):
+        if bird.x > pipe.x:
+            return True
+        else:
+            return False
+     
     def collide(self,bird):
 
         """ Using a mask vs a rectangle for collision detection 
@@ -158,7 +164,7 @@ class Pipe:
         return False
 
 class Base:
-    VELOCITY =PIPE_BASE_VELOCITY
+    VELOCITY =ITEM_VELOCITY
     WIDTH = BASE_IMAGE.get_width()
     IMAGE = BASE_IMAGE
 
@@ -182,74 +188,9 @@ class Base:
         window.blit(self.IMAGE, (self.x1, self.y))
         window.blit(self.IMAGE, (self.x2, self.y))
 
-
 # FUNCTIONS
-def draw_window(window,bird,pipes,base,score,session_high_score,game_active):
-    if(game_active):
-        window.blit(BACKGROUND_IMAGE,(0,0))
-        [pipe.draw(window) for pipe in pipes]
-        bird.draw(window)
-        base.draw(window)
-        score_surface = SCORE_FONT.render(f'{int(score)}' ,True,(255,255,255))
-        score_rect = score_surface.get_rect(center = (288,100))
-        window.blit(score_surface,score_rect)
-        pygame.display.update()  
-    else:
-        window.blit(BACKGROUND_IMAGE,(0,0))
-        high_score_surface = SCORE_FONT.render(f'High score:{int(session_high_score)}' ,True,(255,255,255))
-        high_score_rect = high_score_surface.get_rect(center = (288,100))
-        window.blit(high_score_surface,high_score_rect)
-        window.blit(GAME_OVER_IMAGE,(100,400))
-        pygame.display.update()
+def getNewBird():
+    return Bird(BIRD_DEFAULT_Y_POSITION,BIRD_DEFAULT_Y_POSITION)
 
-def main_game():
-    bird = Bird(230,350)
-    base = Base(930)
-    pipes = [Pipe(700)]
-
-    game_active = True
-    score = 0
-    session_high_score = 0
-    window = pygame.display.set_mode([WIN_WIDTH,WIN_HEIGHT])
-    clock = pygame.time.Clock()
-
-    while True:
-        clock.tick(30)
-        add_pipe = False
-        remove_pipes = [] 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.QUIT
-            if event.type == pygame.KEYDOWN and game_active == True:
-                if event.key == pygame.K_SPACE:
-                    bird.flap()  
-                    FLAP_SOUND.play()
-            if event.type == pygame.KEYDOWN and game_active == False:
-                    bird = Bird(230,250)
-                    pipes = [Pipe(700)]
-                    game_active = True
-                    score = 0
-        
-        if game_active:
-            for pipe in pipes:
-                if(pipe.collide(bird)):
-                    HIT_SOUND.play()
-                    game_active = False
-                [pipes.remove(pipe) if pipe.pipe_passed and pipe.x +pipe.PIPE_TOP.get_width() < 0 else False for pipe in pipes]
-                if not pipe.pipe_passed and pipe.x < bird.x:
-                    """Update pipe passed to true, add score, and create new pipe"""
-                    pipe.pipe_passed = True
-                    score +=1 
-                    session_high_score = score if score > session_high_score else session_high_score
-                    SCORE_SOUND.play()
-                    pipes.append(Pipe(700))
-                pipe.move()
-            if bird.y + bird.image.get_height() >= 930 or bird.y  <= 0:
-                game_active = False
-            bird.move()
-            base.move()  
-        draw_window(window,bird,pipes,base,score,session_high_score,game_active)
-
-# RUN
-if __name__ == "__main__":
-    main_game()
+def getNewPipe():
+    return Pipe(PIPE_DEFAULT_X_POSITION)

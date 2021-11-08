@@ -8,47 +8,38 @@
 # IMPORTS
 import pygame
 from pygame.constants import QUIT
-import flappybird
+from Lib import FlappyBirdLibrary
 import os,sys
 import neat
+import pickle
 
 # CONSTANTS
 DRAW_LINES = True
-WINDOW = pygame.display.set_mode((flappybird.WIN_WIDTH, flappybird.WIN_HEIGHT))
+WINDOW = pygame.display.set_mode((FlappyBirdLibrary.WINDOW_WIDTH, FlappyBirdLibrary.WINDOW_HEIGHT))
 GENERATION = 0
 
 def draw_window(win, birds, pipes, base, score, pipe_ind):
 
-    # if generation == 0:
-    #     gen = 1
-    win.blit(flappybird.BACKGROUND_IMAGE, (0,0))
+    win.blit(FlappyBirdLibrary.BACKGROUND_IMAGE, (0,0))
 
     for pipe in pipes:
         pipe.draw(win)
 
     base.draw(win)
     for bird in birds:
-        # draw lines from bird to pipe
         if DRAW_LINES:
             try:
                 pygame.draw.line(win, (255,0,0), (bird.x+bird.image.get_width()/2, bird.y + bird.image.get_height()/2), (pipes[pipe_ind].x + pipes[pipe_ind].PIPE_TOP.get_width()/2, pipes[pipe_ind].height), 5)
                 pygame.draw.line(win, (255,0,0), (bird.x+bird.image.get_width()/2, bird.y + bird.image.get_height()/2), (pipes[pipe_ind].x + pipes[pipe_ind].PIPE_BOTTOM.get_width()/2, pipes[pipe_ind].bottom), 5)
             except Exception as e:
                 pass
-        # draw bird
         bird.draw(win)
 
-    # score
-    score_label = flappybird.SCORE_FONT.render("Score: " + str(score),1,(255,255,255))
-    win.blit(score_label, (flappybird.WIN_WIDTH - score_label.get_width() - 15, 10))
+    score_label = FlappyBirdLibrary.SCORE_FONT.render("Score: " + str(score),1,(255,255,255))
+    win.blit(score_label, (FlappyBirdLibrary.WINDOW_WIDTH - score_label.get_width() - 15, 10))
 
-    # generations
-    score_label =  flappybird.SCORE_FONT.render("Gens: " + str(GENERATION),1,(255,255,255))
+    score_label =  FlappyBirdLibrary.SCORE_FONT.render("Gens: " + str(GENERATION),1,(255,255,255))
     win.blit(score_label, (10, 10))
-
-    # # alive
-    # score_label =  flappybird.SCORE_FONT.render("Alive: " + str(len(birds)),1,(255,255,255))
-    # win.blit(score_label, (10, 50))
 
     pygame.display.update()
 
@@ -64,19 +55,19 @@ def main_game_AI(genomes,config):
         genome.fitness = 0  # start with fitness level of 0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         nets.append(net)
-        birds.append(flappybird.Bird(230,350))
+        birds.append(FlappyBirdLibrary.Bird(230,350))
         ge.append(genome)
 
-    base = flappybird.Base(930)
-    pipes = [flappybird.Pipe(600)]
-    window = pygame.display.set_mode([flappybird.WIN_WIDTH,flappybird.WIN_HEIGHT])
+    base = FlappyBirdLibrary.Base(930)
+    pipes = [FlappyBirdLibrary.Pipe(600)]
+    window = pygame.display.set_mode([FlappyBirdLibrary.WINDOW_WIDTH,FlappyBirdLibrary.WINDOW_HEIGHT])
     clock = pygame.time.Clock()
 
     score = 0
     run = True
 
     while run:
-        clock.tick(30)
+        clock.tick(50)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                     pygame.QUIT
@@ -126,7 +117,7 @@ def main_game_AI(genomes,config):
             # can add this line to give more reward for passing through a pipe (not required)
             for genome in ge:
                 genome.fitness += 5
-            pipes.append(flappybird.Pipe(700))
+            pipes.append(FlappyBirdLibrary.Pipe(700))
 
         for r in remove:
             pipes.remove(r)
@@ -141,16 +132,27 @@ def main_game_AI(genomes,config):
         draw_window(window,birds, pipes, base, score,pipe_index)
     
 
-def run_thing(config):
+def Neat_Config(config):
     config = neat.config.Config(neat.DefaultGenome,neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation,config_path)
     population = neat.Population(config)
     population.add_reporter(neat.StdOutReporter(True))
     population.add_reporter(neat.StatisticsReporter())
     winner = population.run(main_game_AI,50)
+    with open('AI/genome.pk1','wb') as file:
+        pickle.dump(winner,file)
+        file.close()
 
+    
+def load_result(config_path):
+        config = neat.config.Config(neat.DefaultGenome,neat.DefaultReproduction,neat.DefaultSpeciesSet,neat.DefaultStagnation,config_path)
+        with open('AI/genome.pk1', "rb") as f:
+            genome = pickle.load(f)
+        genomes = [(1,genome)]
+        main_game_AI(genomes,config)
 
 # RUN
 if __name__ == "__main__":
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir,"AI","config-NEAT.txt")
-    run_thing(config_path)
+    # Neat_Config(config_path)
+    load_result(config_path)
