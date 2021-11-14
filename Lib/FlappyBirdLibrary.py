@@ -16,12 +16,12 @@ pygame.mixer.init()
 WINDOW_WIDTH = 576
 WINDOW_HEIGHT = 1024
 ITEM_VELOCITY = 10
-PIPE_GAP = 400
+PIPE_GAP = 300
 BIRD_VELOCITY = -11.10
 BASE_LEVEL = 930
 BIRD_DEFAULT_X_POSTION = 230
 BIRD_DEFAULT_Y_POSITION = 350
-PIPE_DEFAULT_X_POSITION = 700
+PIPE_DEFAULT_X_POSITION = 770
 BIRD_IMAGES = [pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird1.png'))),
             pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird2.png'))),
             pygame.transform.scale2x(pygame.image.load(os.path.join('assets','bird3.png')))]
@@ -103,6 +103,7 @@ class Bird:
         rotated_image = pygame.transform.rotate(self.image,self.tilt)
         rotated_rectangle = rotated_image.get_rect(center=self.image.get_rect(topleft = (self.x,self.y)).center)
         window.blit(rotated_image,rotated_rectangle.topleft)
+
     
     def get_mask(self):
         return pygame.mask.from_surface(self.image)
