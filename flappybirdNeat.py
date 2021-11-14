@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
     #Run existing model 
     else:
-        model_path = os.path.join(local_dir,'AI',args.name[0])
+        model_path = os.path.join(local_dir,'AI','SavedModels',args.name[0])
         if(os.path.exists(model_path)):
             load_existing_neat_model(config_path,model_path) 
         else:
