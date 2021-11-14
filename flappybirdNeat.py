@@ -5,6 +5,22 @@
 
 # Python: 3.8.13
 
+# Notes
+"""
+1) from command line can choose to train (-train) with a genome count (-gc)
+   or can choose to train a new model. This choice will determine which function is called
+
+2) In the game loop just create a list of active birds(birds who haven't died), the network path of the bird (NEAT)
+   and a list of active genomes(a list of the networks paths still active). When a bird hits a pipe or goes above or below the map 
+   its fitness is heavily penalized. Fitness increased each pipe is goes through. 
+
+3) After playing with network inputs I've found it best to give the bird the outer corners of the pipes,
+   as they kept hitting them. Along with pipe height gap and distance to pipe.
+
+4) Code and error handling can be improved greatly. Main purpose was to focused on the network algorithm and building neural networks.
+"""
+
+
 # IMPORTS
 import pygame
 import argparse
@@ -16,7 +32,7 @@ from Lib import FlappyBirdLibrary
 # CONSTANTS
 PARSER = argparse.ArgumentParser(description="Lets play some flappy bird")
 PARSER.add_argument('-train', action='store_true',help='Train a new model with NEAT use -config to pass additional argurments')
-PARSER.add_argument('-config', default=[50], nargs=1, metavar=('genome count'),help="geonome count required (number of times to run model)")
+PARSER.add_argument('-gc', default=[50], nargs=1, metavar=('genome count'),help="geonome count required (number of times to run model)")
 PARSER.add_argument('-name', default="genome_NEAT_100F_100P.pk1",type=str,nargs=1,help="name of model to run default is 100 fitness 100 population TAN H function")
 WINDOW = pygame.display.set_mode((FlappyBirdLibrary.WINDOW_WIDTH, FlappyBirdLibrary.WINDOW_HEIGHT))
 DRAW_LINES = True
@@ -29,7 +45,7 @@ def create_new_neat_model(config_path,genome_count):
     population.add_reporter(neat.StdOutReporter(True))
     population.add_reporter(neat.StatisticsReporter())
     winner = population.run(main_game,int(genome_count))
-    with open(f'AI/SavedModels/genome_NEAT_Fitness{5000}_Population{50}.pk1','wb') as file:
+    with open(f'AI/SavedModels/genome_NEAT_Fitness{10000}_Population{50}_Genomes{str(genome_count)}.pk1','wb') as file:
         pickle.dump(winner,file)
         file.close()
 
@@ -47,13 +63,13 @@ def draw_window(window, birds, pipes, base, score, pipe_index):
     [pipe.draw(window) for pipe in pipes]
     base.draw(window)
     for bird in birds:
-        if DRAW_LINES:
-            try:
-                # draws lines to top and bottom and top
-                pygame.draw.line(window, (255,0,0), (bird.x+bird.image.get_width()/2, bird.y + bird.image.get_height()/2), (pipes[pipe_index].x + pipes[pipe_index].PIPE_TOP.get_width()/2, pipes[pipe_index].height), 5)
-                pygame.draw.line(window, (255,0,0), (bird.x+bird.image.get_width()/2, bird.y + bird.image.get_height()/2), (pipes[pipe_index].x + pipes[pipe_index].PIPE_BOTTOM.get_width()/2, pipes[pipe_index].bottom), 5)
-            except Exception as e:
-                pass
+        # if DRAW_LINES:
+        try:
+                # draws lines to top and bottom at outer corners
+            pygame.draw.line(window, (255,0,0), (bird.x+bird.image.get_width()/2, bird.y + bird.image.get_height()/2), (pipes[pipe_index].x + pipes[pipe_index].PIPE_TOP.get_width(), pipes[pipe_index].height), 5)
+            pygame.draw.line(window, (255,0,0), (bird.x+bird.image.get_width()/2, bird.y + bird.image.get_height()/2), (pipes[pipe_index].x + pipes[pipe_index].PIPE_BOTTOM.get_width(), pipes[pipe_index].bottom), 5)
+        except Exception as e:
+            pass
         bird.draw(window)
 
     birds_label = FlappyBirdLibrary.SCORE_FONT.render("LEFT: "  + str(len(birds)),1,(255,255,255))
@@ -97,6 +113,7 @@ def main_game(genomes,config):
                     pygame.QUIT
                     quit() 
 
+
         if len(active_birds_list) > 0 and len(pipes) > 0:
             upcoming_pipe_index = 1 if pipes[0].isPassed(pipes[0],active_birds_list[0]) else 0
         else:
@@ -107,10 +124,7 @@ def main_game(genomes,config):
             bird.move()
             active_genome_list[index].fitness += 1
             # let the network associated to the current bird decide what to do next based on these inputs
-            print(f"BIRD Y AND HEIGHT: {abs(bird.y - pipes[upcoming_pipe_index].height)} ")
-            print(f" BIRD Y AND BOTTOM PIPE  {abs(bird.y - pipes[upcoming_pipe_index].bottom)}")
-            output = active_networks_list[active_birds_list.index(bird)].activate((bird.y, abs(bird.y - pipes[upcoming_pipe_index].height), abs(bird.y - pipes[upcoming_pipe_index].bottom)))
-
+            output = active_networks_list[active_birds_list.index(bird)].activate((bird.y,(bird.y - pipes[upcoming_pipe_index].height),(bird.y - pipes[upcoming_pipe_index].PIPE_TOP.get_width()),(bird.y - pipes[upcoming_pipe_index].PIPE_BOTTOM.get_width())))
             if output[0] > 0.5:
                 bird.flap()
 
@@ -132,7 +146,7 @@ def main_game(genomes,config):
     
         for index,bird in enumerate(active_birds_list):
             if bird.y + bird.image.get_height() - 10 >= FlappyBirdLibrary.BASE_LEVEL or bird.y < 0:
-                active_genome_list[index].fitness -= 20
+                active_genome_list[index].fitness -= 10000
                 remove_bird_from_data(active_genome_list,active_networks_list,active_birds_list,bird)
 
         draw_window(window,active_birds_list, pipes, base, score,upcoming_pipe_index)
@@ -147,7 +161,7 @@ if __name__ == "__main__":
 
     # Train new model
     if(args.train):
-        genome_count = args.config[0]
+        genome_count = args.gc[0]
         create_new_neat_model(config_path,genome_count)
 
     #Run existing model 

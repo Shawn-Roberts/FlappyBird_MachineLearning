@@ -17,7 +17,7 @@ WINDOW_WIDTH = 576
 WINDOW_HEIGHT = 1024
 ITEM_VELOCITY = 10
 PIPE_GAP = 300
-BIRD_VELOCITY = -11.10
+BIRD_VELOCITY = -10
 BASE_LEVEL = 930
 BIRD_DEFAULT_X_POSTION = 230
 BIRD_DEFAULT_Y_POSITION = 350
@@ -136,7 +136,7 @@ class Pipe:
         win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
 
     def isPassed(self,pipe,bird):
-        if bird.x > pipe.x:
+        if bird.x > pipe.x + pipe.PIPE_TOP.get_width():
             return True
         else:
             return False
